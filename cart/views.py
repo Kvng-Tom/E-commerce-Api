@@ -1,10 +1,11 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from .models import Cart, CartItem, Payment
+from .models import *
 from products.models import Product
-from .serializers import*
+from .serializers import *
 from drf_yasg.utils import swagger_auto_schema
 
 
@@ -196,6 +197,7 @@ class OrderHistoryView(APIView):
         return Response(serializer.data, status=200)
         
 class ProductReviewView(APIView):
+
     permission_classes = [permissions.IsAuthenticated]
 
     @swagger_auto_schema(request_body=ProductReviewSerializer)
@@ -214,3 +216,12 @@ class ProductReviewView(APIView):
             serializer.save(user=request.user, product=product)
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
+
+class ProductReviewListView(APIView):
+    serializer_class = ProductReviewSerializer
+
+    def get_queryset(self):
+
+        product_id = self.kwargs['product_id']
+
+        return ProductReview.objects.filter(product_id=product_id)

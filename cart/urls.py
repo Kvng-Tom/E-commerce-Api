@@ -11,5 +11,6 @@ urlpatterns =  [
     path('checkout/', CheckoutView.as_view()),
     path('orders/', OrderHistoryView.as_view()),
     path('<int:product_id>/review/', ProductReviewView.as_view()),
+    path('<int:product_id>/reviews/', ProductReviewListView.as_view())
     
 ]
