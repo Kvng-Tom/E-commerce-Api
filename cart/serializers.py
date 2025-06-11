@@ -84,3 +84,9 @@ class ProductReviewSerializer(serializers.ModelSerializer):
         model = ProductReview
         fields = ['id', 'product', 'user', 'rating', 'review', 'created_at']
         read_only_fields = ['user', 'created_at', 'product']
+
+class ShippingAddressSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = ShippingAddress
+        fields = ['full_name', 'address_line', 'city', 'state', 'postal_code', 'country', 'phone_number']

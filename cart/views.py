@@ -218,10 +218,48 @@ class ProductReviewView(APIView):
         return Response(serializer.errors, status=400)
 
 class ProductReviewListView(APIView):
-    serializer_class = ProductReviewSerializer
 
-    def get_queryset(self):
+    def get(self, request, product_id):
 
-        product_id = self.kwargs['product_id']
+        reviews = ProductReview.objects.filter(product__id=product_id)
+        serializer = ProductReviewSerializer(reviews, many=True)
+        
+        return Response(serializer.data, status=200)
 
-        return ProductReview.objects.filter(product_id=product_id)
+
+class ShippingAddressView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    @swagger_auto_schema(request_body=ShippingAddressSerializer)
+    def post(self, request):
+        user = request.user
+        
+        # Get user's active cart (the one they're shopping with)
+        cart = Cart.objects.filter(user=user, status='not_paid').first()
+        if not cart:
+            return Response({'error': 'No active cart found. Add items to cart first.'}, status=400)
+        
+        # Check if they already have shipping address for this cart
+        if hasattr(cart, 'shipping_address'):
+            return Response({'error': 'Shipping address already exists. Use PUT to update.'}, status=400)
+        
+        serializer = ShippingAddressSerializer(data=request.data)
+        if serializer.is_valid():
+            # Save with BOTH user and cart (your model needs both!)
+            serializer.save(user=user, cart=cart)
+            return Response({
+                'message': 'Shipping address saved successfully!',
+                'data': serializer.data
+            }, status=201)
+        return Response(serializer.errors, status=400)
+    
+    def get(self, request):
+        user = request.user
+        # Get shipping address for current active cart
+        cart = Cart.objects.filter(user=user, status='not_paid').first()
+        
+        if not cart or not hasattr(cart, 'shipping_address'):
+            return Response({'message': 'No shipping address found.'}, status=404)
+            
+        serializer = ShippingAddressSerializer(cart.shipping_address)
+        return Response(serializer.data, status=200)

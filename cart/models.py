@@ -60,3 +60,21 @@ class ProductReview(models.Model):
 
     def __str__(self):
         return f"Review by {self.user.email} for {self.product.name}"
+    
+
+class ShippingAddress(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    cart = models.OneToOneField(Cart, on_delete=models.CASCADE, related_name='shipping_address')
+    full_name = models.CharField(max_length=100)
+    address_line = models.CharField(max_length=255)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    postal_code = models.CharField(max_length=20)
+    country = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Shipping Address for {self.user.email}"
+    
+    
