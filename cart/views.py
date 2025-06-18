@@ -8,7 +8,6 @@ from products.models import Product
 from .serializers import *
 from drf_yasg.utils import swagger_auto_schema
 
-
 class AddToCartView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -179,7 +178,16 @@ class CheckoutView(APIView):
 
             Payment.objects.create(cart=cart, method=method, amount=total)
 
-            return Response({'message': 'Checkout successful.'}, status=200)
+            return Response({
+            "message": "Checkout successful.",
+            "order_id" : cart.id,
+            "total_amount": total,
+            "payment_method": total,
+            "status" : cart.status,
+            "created_at" : cart.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            "shipping_address": ShippingAddressSerializer(cart.shipping_address).data if cart.shipping_address else None,
+            
+            }, status=200)
         
         else:
             return Response(serializer.errors, status=400)
@@ -234,7 +242,7 @@ class ShippingAddressView(APIView):
     def post(self, request):
         user = request.user
         
-        # Get user's active cart (the one they're shopping with)
+        # Get user's that  they're shopping with)
         cart = Cart.objects.filter(user=user, status='not_paid').first()
         if not cart:
             return Response({'error': 'No active cart found. Add items to cart first.'}, status=400)
@@ -244,6 +252,7 @@ class ShippingAddressView(APIView):
             return Response({'error': 'Shipping address already exists. Use PUT to update.'}, status=400)
         
         serializer = ShippingAddressSerializer(data=request.data)
+
         if serializer.is_valid():
             # Save with BOTH user and cart (your model needs both!)
             serializer.save(user=user, cart=cart)
@@ -254,6 +263,7 @@ class ShippingAddressView(APIView):
         return Response(serializer.errors, status=400)
     
     def get(self, request):
+
         user = request.user
         # Get shipping address for current active cart
         cart = Cart.objects.filter(user=user, status='not_paid').first()

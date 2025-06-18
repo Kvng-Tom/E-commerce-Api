@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import *
 from products.serializers import ProductSerializer
-
+from .serializers import ShippingAddressSerializer 
 
 class CartItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
@@ -60,10 +60,11 @@ class OrderHistorySerializer(serializers.ModelSerializer):
     total = serializers.SerializerMethodField()
     payment_method = serializers.SerializerMethodField()
     items = OrderHistoryItemSerializer(many=True, read_only=True)
+    shipping_address = ShippingAddressSerializer( read_only=True)
 
     class Meta:
         model = Cart
-        fields = ['order_number', 'date', 'total', 'payment_method', 'items']
+        fields = ['order_number', 'date', 'total', 'payment_method', 'items', 'shipping_address']
 
     def get_order_number(self, obj):
         return f"ORDER-{obj.id:04d}"
