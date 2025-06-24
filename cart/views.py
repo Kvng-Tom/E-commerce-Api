@@ -141,11 +141,11 @@ class ClearCartView(APIView):
         for item in cart.items.all():
             item.product.available_quantity += item.quantity
             item.product.save()
-        # Delete all items in the cart
+
+        
         cart.items.all().delete()
 
         return Response({'message': 'Cart cleared successfully.'})
-
 class CheckoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -155,43 +155,56 @@ class CheckoutView(APIView):
         cart = Cart.objects.filter(user=user, status='not_paid').first()
 
         if not cart or cart.items.count() == 0:
-
             return Response({'error': 'Cart is empty.'}, status=400)
 
         serializer = PaymentSerializer(data=request.data)
-        
-        if serializer.is_valid():
-            method = serializer.validated_data['method']
-            amount = serializer.validated_data['amount']
-            
-            #This calculates the total amount
-            total = 0
-            for item in cart.items.all():
-                total += item.product.price * item.quantity
-
-            #This checks if the amount entered is equal to the total amount
-            if amount != total:
-                return Response({'error': f'Amount entered : {amount} is not equal to total amount :{total}'}, status=400)
-
-            cart.status = 'paid'
-            cart.save()
-
-            Payment.objects.create(cart=cart, method=method, amount=total)
-
-            return Response({
-            "message": "Checkout successful.",
-            "order_id" : cart.id,
-            "total_amount": total,
-            "payment_method": total,
-            "status" : cart.status,
-            "created_at" : cart.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            "shipping_address": ShippingAddressSerializer(cart.shipping_address).data if cart.shipping_address else None,
-            
-            }, status=200)
-        
-        else:
+        if not serializer.is_valid():
             return Response(serializer.errors, status=400)
-            
+
+        method = serializer.validated_data['method']
+        amount = serializer.validated_data['amount']
+
+        TAX_RATE = 0.075
+        SHIPPING_FEE = 1500
+
+        
+        subtotal = 0.0
+        for item in cart.items.all():
+            subtotal += float(item.product.price) * item.quantity
+
+        # Calculation of tax and total
+        tax = round(subtotal * TAX_RATE, 2)
+        total = round(subtotal + tax + SHIPPING_FEE, 2)
+
+        #validation to check if amount is correct
+        if amount != total:
+            return Response({
+                'error': 'Incorrect amount.',
+                'expected_amount': total,
+                'received_amount': amount
+            }, status=400)
+
+        # To change cart status
+        cart.status = 'paid'
+        cart.save()
+
+        # Save payment info
+        Payment.objects.create(cart=cart, method=method, amount=total)
+
+        return Response({
+            "message": "Checkout successful.",
+            "order_id": cart.id,
+            "subtotal": subtotal,
+            "tax": tax,
+            "shipping_fee": SHIPPING_FEE,
+            "total_amount": total,
+            "payment_method": method,
+            "status": cart.status,
+            "created_at": cart.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            "shipping_address": ShippingAddressSerializer(cart.shipping_address).data if cart.shipping_address else None,
+        }, status=200)
+
+
 class OrderHistoryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -273,3 +286,43 @@ class ShippingAddressView(APIView):
             
         serializer = ShippingAddressSerializer(cart.shipping_address)
         return Response(serializer.data, status=200)
+
+class OrderConfirmationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, order_id):
+        user = request.user
+
+        try:
+            cart = Cart.objects.get(id=order_id, user=user, status='paid')
+        except Cart.DoesNotExist:
+            return Response({'error': 'Order not found.'}, status=404)
+
+        subtotal = sum(float(item.product.price) * item.quantity for item in cart.items.all())
+        tax = round(subtotal * 0.075, 2)
+        shipping_fee = 1500
+        total = round(subtotal + tax + shipping_fee, 2)
+
+        data = {
+            'order_id': cart.id,
+            'order_date': cart.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'items': [
+                {
+                    'product_name': item.product.name,
+                    'price': float(item.product.price),
+                    'quantity': item.quantity,
+                    'total': round(float(item.product.price) * item.quantity, 2)
+                } for item in cart.items.all()
+            ],
+            'summary': {
+                'subtotal': subtotal,
+                'tax': tax,
+                'shipping_fee': shipping_fee,
+                'total': total
+            },
+            'payment_method': cart.payment.method if hasattr(cart, 'payment') else 'Unknown',
+            'shipping_address': ShippingAddressSerializer(cart.shipping_address).data if hasattr(cart, 'shipping_address') else None,
+            'tracking_number': f'TRK{cart.id:06d}'
+        }
+
+        return Response({'message': 'Order confirmed.', 'data': data}, status=200)

@@ -1,7 +1,6 @@
 from rest_framework import serializers
-from .models import *
+from .models import CartItem, Cart, Payment, ProductReview, ShippingAddress
 from products.serializers import ProductSerializer
-from .serializers import ShippingAddressSerializer 
 
 class CartItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
@@ -26,7 +25,7 @@ class CartSerializer(serializers.ModelSerializer):
         return total
 
 class AddToCartSerializer(serializers.Serializer):
-    quantity = serializers.IntegerField(required =False, default=1, min_value=1)
+    quantity = serializers.IntegerField(required =False, default=1, min_value=1, max_value = 100)
 
 
 class UpdateCartItemSerializer(serializers.Serializer):
@@ -34,10 +33,9 @@ class UpdateCartItemSerializer(serializers.Serializer):
 
 class PaymentSerializer(serializers.Serializer):
     method = serializers.ChoiceField(choices=['card', 'cash', 'transfer'])
-    amount = serializers.DecimalField(max_digits=12, decimal_places=2)
-    
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2)   
 
-class OrderHistoryItemSerializer(serializers.ModelSerializer):
+class OrderHistoryItemSerializer(serializers.ModelSerializer): 
     name = serializers.CharField(source='product.name', read_only=True)
     unit_price = serializers.DecimalField(source='product.price', max_digits=12, decimal_places=2, read_only=True)
     subtotal = serializers.SerializerMethodField()
@@ -53,6 +51,12 @@ class OrderPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = ['method', 'amount']
+
+class ShippingAddressSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = ShippingAddress
+        fields = ['full_name', 'address_line', 'city', 'state', 'postal_code', 'country', 'phone_number']
 
 class OrderHistorySerializer(serializers.ModelSerializer):
     order_number = serializers.SerializerMethodField()
@@ -85,9 +89,3 @@ class ProductReviewSerializer(serializers.ModelSerializer):
         model = ProductReview
         fields = ['id', 'product', 'user', 'rating', 'review', 'created_at']
         read_only_fields = ['user', 'created_at', 'product']
-
-class ShippingAddressSerializer(serializers.ModelSerializer):
-    
-    class Meta:
-        model = ShippingAddress
-        fields = ['full_name', 'address_line', 'city', 'state', 'postal_code', 'country', 'phone_number']
