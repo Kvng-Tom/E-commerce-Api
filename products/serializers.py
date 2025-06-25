@@ -10,14 +10,11 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 class ProductSerializer(serializers.ModelSerializer):
-    # Adding a nested serializer for category
-    # This allows us to include category details in the product representation
-    category = CategorySerializer(read_only=True)
-    # This field allows us to set the category by its ID when creating or updating a product
+
+    # This field allows us to set category by ID when creating or updating a product
     category_id = serializers.PrimaryKeyRelatedField(
         
-        queryset=Category.objects.all(), source='category', write_only=True, required=False
-    )
+        queryset=Category.objects.all(), source='category', write_only=True, required=False)
 
 
     class Meta:

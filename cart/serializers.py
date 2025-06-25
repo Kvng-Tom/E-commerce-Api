@@ -60,7 +60,7 @@ class ShippingAddressSerializer(serializers.ModelSerializer):
 
 class OrderHistorySerializer(serializers.ModelSerializer):
     order_number = serializers.SerializerMethodField()
-    date = serializers.DateTimeField(source='created_at', format='%Y-%m-%d', read_only=True)
+    date = serializers.DateTimeField(source='created_at', read_only=True)
     total = serializers.SerializerMethodField()
     payment_method = serializers.SerializerMethodField()
     items = OrderHistoryItemSerializer(many=True, read_only=True)

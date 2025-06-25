@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics
 from .serializers import *
-from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
@@ -16,6 +17,7 @@ from drf_yasg import openapi
 import requests
 import random
 from django.utils import timezone
+from datetime import timedelta
 # Create your views here.
 
 User = get_user_model()
@@ -37,8 +39,8 @@ class LoginView(APIView):
 
         user = authenticate(
             request,
-            email = serializer.validated_data.get('email'),
-            password = serializer.validated_data.get('password')
+            email = serializer.validated_data.get('email'),                                                                                                                                             #type: ignore
+            password = serializer.validated_data.get('password')                                                                                                                                             #type: ignore       
         )
 
         if user:
@@ -46,7 +48,7 @@ class LoginView(APIView):
             token_data = RefreshToken.for_user(user)
 
             data = {
-                "name": user.full_name,
+                "name": user.full_name,                                                                                                                         #type: ignore                                                   
                 "refresh": str(token_data),
                 "access": str(token_data.access_token)
             }
@@ -71,8 +73,8 @@ class UserGenericView(generics.ListCreateAPIView):
         serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        User.objects.create_user(
-            **serializer._validated_data
+        User.objects.create_user(                                                                                                   #type: ignore
+            **serializer._validated_data                                                                                            #type: ignore
         )
 
 
@@ -104,7 +106,7 @@ class OtpVerifyView(APIView):
         serializer = OtpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        otp = serializer.validated_data['otp']
+        otp = serializer.validated_data['otp']                                                                                                                                                  #type: ignore
 
         if not OTP.objects.filter(otp=otp).exists():
             return Response({'error': 'Invalid OTP'}, status=404)
@@ -133,7 +135,7 @@ class ForgotPasswordView(APIView):
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data['email']
+        email = serializer.validated_data['email']                                                                                                                                                              #type: ignore
         
         try:
             user = User.objects.get(email=email)
@@ -142,7 +144,7 @@ class ForgotPasswordView(APIView):
         
         
         otp_code = generate_otp()
-        expiry = timezone.now() + timezone.timedelta(minutes=10)
+        expiry = timezone.now() + timedelta(minutes=10)
         
        
         OTP.objects.create(
@@ -160,7 +162,7 @@ class ForgotPasswordView(APIView):
             "email": email,
             "event": "password_reset",
             "data": {
-                "full_name": user.full_name,
+                "full_name": user.full_name,                                                                                                                                            #type: ignore
                 "otp": str(otp_code)
             }
         }
@@ -175,8 +177,8 @@ class ResetPasswordView(APIView):
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        otp_code = serializer.validated_data['otp']
-        new_password = serializer.validated_data['new_password']
+        otp_code = serializer.validated_data['otp']                                                                                                                                     #type: ignore
+        new_password = serializer.validated_data['new_password']                                                                                                                                                            #type: ignore
         
         try:
             otp_obj = OTP.objects.get(otp=otp_code)

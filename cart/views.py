@@ -138,14 +138,15 @@ class ClearCartView(APIView):
             return Response({'message': 'Cart is already empty.'})
 
         # Restore stock for all items
-        for item in cart.items.all():
+        for item in cart.items.all():                                                                                                                               # type: ignore
             item.product.available_quantity += item.quantity
             item.product.save()
 
         
-        cart.items.all().delete()
+        cart.items.all().delete()                                                           # type: ignore  
 
         return Response({'message': 'Cart cleared successfully.'})
+    
 class CheckoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -154,22 +155,22 @@ class CheckoutView(APIView):
         user = request.user
         cart = Cart.objects.filter(user=user, status='not_paid').first()
 
-        if not cart or cart.items.count() == 0:
+        if not cart or cart.items.count() == 0:                                                                                                                                      # type: ignore
             return Response({'error': 'Cart is empty.'}, status=400)
 
         serializer = PaymentSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
 
-        method = serializer.validated_data['method']
-        amount = serializer.validated_data['amount']
+        method = serializer.validated_data['method']                                                                                                                            # type: ignore
+        amount = serializer.validated_data['amount']                                                                                                                                    # type: ignore
 
         TAX_RATE = 0.075
         SHIPPING_FEE = 1500
 
         
         subtotal = 0.0
-        for item in cart.items.all():
+        for item in cart.items.all():                                                                                                                               # type: ignore                                                                                                                  
             subtotal += float(item.product.price) * item.quantity
 
         # Calculation of tax and total
@@ -193,7 +194,7 @@ class CheckoutView(APIView):
 
         return Response({
             "message": "Checkout successful.",
-            "order_id": cart.id,
+            "order_id": cart.id,                                                                                                    # type: ignore
             "subtotal": subtotal,
             "tax": tax,
             "shipping_fee": SHIPPING_FEE,
@@ -201,7 +202,7 @@ class CheckoutView(APIView):
             "payment_method": method,
             "status": cart.status,
             "created_at": cart.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            "shipping_address": ShippingAddressSerializer(cart.shipping_address).data if cart.shipping_address else None,
+            "shipping_address": ShippingAddressSerializer(cart.shipping_address).data if cart.shipping_address else None,                                                                                                                                                                                                           # type: ignore
         }, status=200)
 
 
@@ -228,7 +229,8 @@ class ProductReviewView(APIView):
         except Product.DoesNotExist:
             return Response({'error': 'Product not found.'}, status=404)
 
-        # Prevent duplicate reviews
+        # This prevent more than one review on a product by a user
+        
         if ProductReview.objects.filter(user=request.user, product=product).exists():
             return Response({'error': 'You have already reviewed this product.'}, status=400)
         
@@ -284,7 +286,7 @@ class ShippingAddressView(APIView):
         if not cart or not hasattr(cart, 'shipping_address'):
             return Response({'message': 'No shipping address found.'}, status=404)
             
-        serializer = ShippingAddressSerializer(cart.shipping_address)
+        serializer = ShippingAddressSerializer(cart.shipping_address)                                                                                                                                                                           # type: ignore
         return Response(serializer.data, status=200)
 
 class OrderConfirmationView(APIView):
@@ -298,13 +300,13 @@ class OrderConfirmationView(APIView):
         except Cart.DoesNotExist:
             return Response({'error': 'Order not found.'}, status=404)
 
-        subtotal = sum(float(item.product.price) * item.quantity for item in cart.items.all())
+        subtotal = sum(float(item.product.price) * item.quantity for item in cart.items.all())                                                                                                                                                                                                              # type: ignore
         tax = round(subtotal * 0.075, 2)
         shipping_fee = 1500
         total = round(subtotal + tax + shipping_fee, 2)
 
         data = {
-            'order_id': cart.id,
+            'order_id': cart.id,                                                                                                                                                        # type: ignore
             'order_date': cart.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             'items': [
                 {
@@ -312,7 +314,7 @@ class OrderConfirmationView(APIView):
                     'price': float(item.product.price),
                     'quantity': item.quantity,
                     'total': round(float(item.product.price) * item.quantity, 2)
-                } for item in cart.items.all()
+                } for item in cart.items.all()                                                                                                                                                                                              # type: ignore
             ],
             'summary': {
                 'subtotal': subtotal,
@@ -320,9 +322,9 @@ class OrderConfirmationView(APIView):
                 'shipping_fee': shipping_fee,
                 'total': total
             },
-            'payment_method': cart.payment.method if hasattr(cart, 'payment') else 'Unknown',
-            'shipping_address': ShippingAddressSerializer(cart.shipping_address).data if hasattr(cart, 'shipping_address') else None,
-            'tracking_number': f'TRK{cart.id:06d}'
+            'payment_method': cart.payment.method if hasattr(cart, 'payment') else 'Unknown',                                                                                                                               # type: ignore
+            'shipping_address': ShippingAddressSerializer(cart.shipping_address).data if hasattr(cart, 'shipping_address') else None,                                                                                                                                       # type: ignore
+            'tracking_number': f'TRK{cart.id:06d}'                                                                                                                                  # type: ignore
         }
 
         return Response({'message': 'Order confirmed.', 'data': data}, status=200)

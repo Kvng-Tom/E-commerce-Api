@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from accounts.models import OTP 
 import random
 from django.utils import timezone
+from datetime import timedelta
 import requests
 
 
@@ -23,7 +24,7 @@ def send_welcome_email(sender, instance, created, **kwargs):
         otp = generate_otp()
         print(otp)
 
-        expiry_date = timezone.now() + timezone.timedelta(minutes=10)
+        expiry_date = timezone.now() + timedelta(minutes=10)
 
         OTP.objects.create(
             otp=otp,

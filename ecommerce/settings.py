@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-from django.utils.timezone import timedelta
+from datetime import timedelta
 import os
 from dotenv import find_dotenv, load_dotenv
 
