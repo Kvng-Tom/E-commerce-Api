@@ -264,12 +264,12 @@ class ShippingAddressView(APIView):
         
         # Check if they already have shipping address for this cart
         if hasattr(cart, 'shipping_address'):
-            return Response({'error': 'Shipping address already exists. Use PUT to update.'}, status=400)
+            return Response({'error': 'Shipping address already exists.'}, status=400)
         
         serializer = ShippingAddressSerializer(data=request.data)
 
         if serializer.is_valid():
-            # Save with BOTH user and cart (your model needs both!)
+            # Save both user and cart 
             serializer.save(user=user, cart=cart)
             return Response({
                 'message': 'Shipping address saved successfully!',
@@ -280,7 +280,7 @@ class ShippingAddressView(APIView):
     def get(self, request):
 
         user = request.user
-        # Get shipping address for current active cart
+        # Get shipping address for  cart
         cart = Cart.objects.filter(user=user, status='not_paid').first()
         
         if not cart or not hasattr(cart, 'shipping_address'):
