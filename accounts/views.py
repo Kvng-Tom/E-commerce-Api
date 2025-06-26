@@ -217,8 +217,9 @@ class LogoutView(APIView):
         responses={200: 'Logged out successfully', 400: 'Bad request'}
     )
     def post(self, request):
-        user = request.user  # This is the authenticated user
+        user = request.user  
         refresh_token = request.data.get("refresh")
+        
         if not refresh_token:
             return Response({"error": "Refresh token is required."}, status=400)
         try:
