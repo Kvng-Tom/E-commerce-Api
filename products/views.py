@@ -60,7 +60,7 @@ class CategoryListCreateView(generics.ListCreateAPIView):
   
     def get_permissions(self):
        if self.request.method == 'POST':
-              return [IsAdminUser()]
+            return [IsAdminUser()]
        return [IsAuthenticated()]
 
 class CategoryDestroyView(generics.DestroyAPIView):
