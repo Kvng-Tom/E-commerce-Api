@@ -40,7 +40,7 @@ def send_welcome_email(sender, instance, created, **kwargs):
 
         data = {
             "email": instance.email,
-            "event": "user-signup",
+            "event": "user-signup-",
             "data": {
                 "full_name": instance.full_name,
                 "otp": str(otp)
