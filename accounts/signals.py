@@ -6,7 +6,14 @@ import random
 from django.utils import timezone
 from datetime import timedelta
 import requests
+import os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+from dotenv import load_dotenv
+load_dotenv()
 
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+FROM_EMAIL = os.getenv("FROM_EMAIL")
 
 
 def generate_otp():
@@ -32,28 +39,27 @@ def send_welcome_email(sender, instance, created, **kwargs):
             expiry_date=expiry_date
         )
 
-        url = "https://api.useplunk.com/v1/track"
-        header = {
-            "Authorization": "Bearer sk_10c4a02e1119df59dedfc538c730b4e437b997aa7ff781f0",
-            "Content-Type": "application/json"
-        }
-
         data = {
-            "email": instance.email,
-            "event": "user-signup-",
-            "data": {
-                "full_name": instance.full_name,
-                "otp": str(otp)
-            }
+            "personalizations": [{
+                "to": [{"email": instance.email}],
+                "subject": "Welcome! Verify your account"
+            }],
+            "from": {"email": FROM_EMAIL},
+            "content": [{
+                "type": "text/html",
+                "value": f"<p>Hello {instance.full_name},</p><p>Your verification OTP is <strong>{otp}</strong>. It will expire in 10 minutes.</p>"
+            }]
         }
 
         response = requests.post(
-            url=url,
-            headers=header,
+            "https://api.sendgrid.com/v3/mail/send",
+            headers={
+                "Authorization": f"Bearer {SENDGRID_API_KEY}",
+                "Content-Type": "application/json"
+            },
             json=data
         )
 
-        print(response.json())
-
-
+        print("Status:", response.status_code)
+        print("Response:", response.text)
 
